@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
-"""
-Ce module contient les boites de dialogue du programme.
-"""
 
 from PyQt4 import QtGui, QtCore
 import logging
 from client.cltgui.cltguiwidgets import WExplication, WCombo, WSpinbox
-from util.dice import dice
+from util.utilwidgets import WDice
 import oathAndLiesParams as pms
-import oathAndLiesTexts as texts
+import oathAndLiesTexts as texts_OL
 from oathAndLiesGuiSrc import OL_widgains
+from util.utili18n import le2mtrans
 
 
 logger = logging.getLogger("le2m")
@@ -38,7 +36,7 @@ class DConfiguration(QtGui.QDialog):
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
 
-        self.setWindowTitle(u"Configuration")
+        self.setWindowTitle(le2mtrans(u"Configure"))
         self.adjustSize()
         self.setFixedSize(self.size())
 
@@ -75,7 +73,7 @@ class DDecisionA(QtGui.QDialog):
         layout = QtGui.QVBoxLayout(self)
 
         self._widexplication = WExplication(
-            parent=self, text=texts.get_explication(pms.JOUEUR_A),
+            parent=self, text=texts_OL.get_text_explanation(pms.JOUEUR_A),
             size=(450, 80))
         layout.addWidget(self._widexplication)
 
@@ -84,7 +82,7 @@ class DDecisionA(QtGui.QDialog):
             lambda _: self._widdice.setEnabled(True))
         layout.addWidget(self._widgains)
 
-        self._widdice = dice.WDice(automatique=self._automatique, parent=self,
+        self._widdice = WDice(automatique=self._automatique, parent=self,
                                    tries=1, speed=10, autotime=2000)
         self._widdice.ui.pushButton_stop.clicked.connect(
             lambda _: self._widmessage.setEnabled(True))
@@ -149,7 +147,7 @@ class DDecisionB(QtGui.QDialog):
         layout = QtGui.QVBoxLayout(self)
 
         self._widExplication = WExplication(
-            text=texts.get_explication(pms.JOUEUR_B), parent=self,
+            text=texts_OL.get_text_explanation(pms.JOUEUR_B), parent=self,
             size=(450, 80))
         layout.addWidget(self._widExplication)
 

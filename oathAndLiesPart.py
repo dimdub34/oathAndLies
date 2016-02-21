@@ -8,10 +8,8 @@ from sqlalchemy import Column, Integer, Float, ForeignKey
 from collections import OrderedDict
 from server.servbase import Base
 from server.servparties import Partie
-from util.utili18n import le2mtrans
 from util.utiltools import get_module_attributes
 import oathAndLiesParams as pms
-import oathAndLiesTexts as texts
 
 
 logger = logging.getLogger("le2m")
@@ -27,30 +25,9 @@ class PartieOL(Partie):
         super(PartieOL, self).__init__("oathAndLies", "OL")
         self._le2mserv = le2mserv
         self.joueur = joueur
-        self._texte_recapitulatif = u""
-        self._texte_final = u""
         self.OL_gain_ecus = 0
         self.OL_gain_euros = 0
-
-        self._histoA = OrderedDict()
-        self._histoA[u"Lancé de\ndé"] = "OL_tirage"
-        self._histoA[u"Votre message\nà B"] = "OL_message"
-        self._histoA[u"Decision de B"] = "OL_decision"
-        self._histoA[u"Option\nappliquée"] = "OL_appliedoption"
-        self._histoA[u"Gain"] = "OL_periodpayoff"
-
-        self._histoB = OrderedDict()
-        self._histoB[u"Message de A"] = "OL_message"
-        self._histoB[u"Votre décision"] = "OL_decision"
-        self._histoB[u"Gain"] = "OL_periodpayoff"
-
-        self.periods = {}
-        self._currentperiod = None
         self._role = None
-
-    @property
-    def currentperiod(self):
-        return self._currentperiod
 
     @property
     def role(self):
@@ -62,26 +39,14 @@ class PartieOL(Partie):
 
     @defer.inlineCallbacks
     def configure(self):
-        """
-        Allow to make changes in the part parameters
-        :return:
-        """
         logger.debug(u"{} Configure".format(self.joueur))
         yield (self.remote.callRemote("configure", get_module_attributes(pms)))
         self.joueur.info(u"Ok")
 
     @defer.inlineCallbacks
     def newperiod(self, period):
-        """
-        Create a new period and inform the remote
-        If this is the first period then empty the historic
-        :param periode:
-        :return:
-        """
         logger.debug(u"{} New Period".format(self.joueur))
-        if period == 1:
-            del self._histo[1:]
-        self._currentperiod = RepetitionsOL(period)
+        self.currentperiod = RepetitionsOL(period)
         self.currentperiod.OL_role = self.role
         self.currentperiod.OL_periodcode = pms.GAME
         self.currentperiod.OL_group = self.joueur.groupe
@@ -93,40 +58,32 @@ class PartieOL(Partie):
 
     @defer.inlineCallbacks
     def display_role(self):
-        txt = texts.get_role(self.role)
-        yield (self.joueur.get_part("base").remote.callRemote(
-            "display_information", txt))
+        yield (self.remote.callRemote("display_role"), self._role)
         self.joueur.info("Ok")
         self.joueur.remove_waitmode()
 
     @defer.inlineCallbacks
     def display_decision(self):
-        """
-        Display the decision screen on the remote
-        Get back the decision
-        :return:
-        """
         logger.debug(u"{} Decision".format(self.joueur))
         debut = datetime.now()
+
         if self.role == pms.JOUEUR_A:
             temp = yield(self.remote.callRemote("display_decision_A"))
             self.currentperiod.OL_tirage = temp["dice"]
             self._currentperiod.OL_message = temp["message"]
             self.joueur.info(u"{} - {}".format(
                 self.currentperiod.OL_tirage, self.currentperiod.OL_message))
+
         elif self.role == pms.JOUEUR_B:
             self.currentperiod.OL_decision = yield (
                 self.remote.callRemote(
                     "display_decision_B", self.currentperiod.OL_message))
             self.joueur.info(u"{}".format(self.currentperiod.OL_decision))
+
         self.currentperiod.OL_decisiontime = (datetime.now() - debut).seconds
         self.joueur.remove_waitmode()
 
     def compute_periodpayoff(self):
-        """
-        Compute the payoff for the period
-        :return:
-        """
         logger.debug(u"{} Period Payoff".format(self.joueur))
         self.currentperiod.OL_periodpayoff = 0
         xa, xb = pms.CODES_PERIODES[pms.GAME][0]
@@ -166,45 +123,21 @@ class PartieOL(Partie):
 
     @defer.inlineCallbacks
     def display_summary(self, *args):
-        """
-        Create the summary (txt and historic) and then display it on the
-        remote
-        :param args:
-        :return:
-        """
         logger.debug(u"{} Summary".format(self.joueur))
-        self._texte_recapitulatif = texts.get_recapitulatif(
-            self.currentperiod, self.role)
-        histemp = self._histoA if self.role == pms.JOUEUR_A else self._histoB
-        histotemp2 = OrderedDict()
-        for k, v in histemp.iteritems():
-            histotemp2[k] = getattr(self.currentperiod, v)
-            if v == "OL_appliedoption":
-                histotemp2[k] = u"X" if histotemp2[k] == pms.OPTION_X else u"Y"
-
-        histo = [list(histotemp2.viewkeys()), list(histotemp2.viewvalues())]
         yield(self.remote.callRemote(
-            "display_summary", self._texte_recapitulatif, histo))
+            "display_summary", self.currentperiod.todict()))
         self.joueur.info("Ok")
         self.joueur.remove_waitmode()
     
     def compute_partpayoff(self):
-        """
-        Compute the payoff of the part
-        :return:
-        """
         logger.debug(u"{} Part Payoff".format(self.joueur))
-        # gain partie
+
         self.OL_gain_ecus = self.currentperiod.OL_cumulativepayoff
         self.OL_gain_euros = \
             float(self.OL_gain_ecus) * float(pms.TAUX_CONVERSION)
+        self.remote.callRemote("set_payoffs", self.OL_gain_euros,
+                               self.OL_gain_ecus)
 
-        # texte final
-        self._texte_final = texts.get_texte_final(
-            self.OL_gain_ecus,
-            self.OL_gain_euros)
-
-        logger.debug(u"{} Final text {}".format(self.joueur, self._texte_final))
         logger.info(u'{} Payoff ecus {} Payoff euros {:.2f}'.format(
             self.joueur, self.OL_gain_ecus, self.OL_gain_euros))
 
@@ -236,8 +169,9 @@ class RepetitionsOL(Base):
         self.OL_periodpayoff = 0
         self.OL_cumulativepayoff = 0
 
-    def todict(self, joueur):
+    def todict(self, joueur=None):
         temp = {c.name: getattr(self, c.name) for c in self.__table__.columns}
-        temp["joueur"] = joueur
+        if joueur:
+            temp["joueur"] = joueur
         return temp
 

@@ -2,26 +2,23 @@
 
 import logging
 import random
-
 from twisted.internet import defer
-from twisted.spread import pb
+from client.cltremote import IRemote
 from util.utiltools import get_module_info
 from client.cltgui.cltguidialogs import GuiRecapitulatif
 import oathAndLiesParams as pms
+import oathAndLiesTexts as texts_OL
 from oathAndLiesGui import DDecisionA, DDecisionB
 
 
 logger = logging.getLogger("le2m")
 
 
-class RemoteOL(pb.Referenceable):
-    """
-    Class remote, remote_ methods can be called by the server
-    """
+class RemoteOL(IRemote):
     def __init__(self, le2mclt):
-        self._le2mclt = le2mclt
-        self._currentperiod = 0
-        self._histo = []
+        IRemote.__init__(self, le2mclt)
+        self._histo_vars = None
+        self._role = None
 
     def remote_configure(self, params):
         """
@@ -35,6 +32,23 @@ class RemoteOL(pb.Referenceable):
             setattr(pms, k, v)
         logger.debug(u"Params")
         logger.debug(get_module_info(pms))
+
+    def _init_histo(self):
+        if self._role == pms.JOUEUR_A:
+            self._histo_vars = ["OL_tirage", "OL_message", "OL_decision",
+                                "OL_appliedoption", "OL_periodpayoff"]
+        else:
+            self._histo_vars = ["OL_message", "OL_decision", "OL_periodpayoff"]
+        self.histo.append(texts_OL.get_histo_header(self._role))
+
+    def remote_display_role(self, role):
+        self._role = role
+        self._init_histo()
+        if self.le2mclt.simulation:
+            return 1
+        else:
+            return self.le2mclt.get_remote("base").remote_display_information(
+                texts_OL.get_text_role(self._role))
 
     def remote_newperiod(self, periode):
         """
@@ -94,6 +108,16 @@ class RemoteOL(pb.Referenceable):
         :param historique:
         :return: deferred
         """
+        self._texte_recapitulatif = texts.get_recapitulatif(
+            self.currentperiod, self.role)
+        histemp = self._histoA if self.role == pms.JOUEUR_A else self._histoB
+        histotemp2 = OrderedDict()
+        for k, v in histemp.iteritems():
+            histotemp2[k] = getattr(self.currentperiod, v)
+            if v == "OL_appliedoption":
+                histotemp2[k] = u"X" if histotemp2[k] == pms.OPTION_X else u"Y"
+
+        histo = [list(histotemp2.viewkeys()), list(histotemp2.viewvalues())]
         logger.info(u"{} Summary".format(self._le2mclt.uid))
         self._histo = historique
         if self._le2mclt.simulation:

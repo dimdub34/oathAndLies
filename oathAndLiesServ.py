@@ -3,13 +3,11 @@
 import logging
 from collections import OrderedDict
 from twisted.internet import defer
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 from util import utiltools
 import oathAndLiesParams as pms
-import oathAndLiesPart  # for sqlalchemy
 from oathAndLiesGui import DConfiguration
+from util.utili18n import le2mtrans
+import oathAndLiesTexts as texts_OL
 
 
 logger = logging.getLogger("le2m.{}".format(__name__))
@@ -22,13 +20,13 @@ class Serveur(object):
         # creation of the menu (will be placed in the "part" menu on the
         # server screen)
         actions = OrderedDict()
-        actions[u"Configurer"] = self._configure
-        actions[u"Afficher les paramètres"] = \
+        actions[le2mtrans(u"Configure")] = self._configure
+        actions[le2mtrans(u"Display parameters")] = \
             lambda _: self._le2mserv.gestionnaire_graphique. \
             display_information2(
-                utiltools.get_module_info(pms), u"Paramètres")
-        actions[u"Démarrer"] = lambda _: self._demarrer()
-        actions[u"Afficher les gains"] = \
+                utiltools.get_module_info(pms), le2mtrans(u"Parameters"))
+        actions[le2mtrans(u"Start")] = lambda _: self._demarrer()
+        actions[le2mtrans(u"Display payoffs")] = \
             lambda _: self._le2mserv.gestionnaire_experience.\
             display_payoffs_onserver("oathAndLies")
         self._le2mserv.gestionnaire_graphique.add_topartmenu(
@@ -54,30 +52,33 @@ class Serveur(object):
         Start the part
         :return:
         """
+        # Check conditions =====================================================
+        if self._le2mserv.gestionnaire_joueurs.nombre % pms.TAILLE_GROUPES > 0:
+            self._le2mserv.gestionnaire_graphique.display_error(
+                le2mtrans(u"The number of players is not compatible with the "
+                          u"group size"))
+            return
         confirmation = self._le2mserv.gestionnaire_graphique.\
-            question(u"Démarrer oathAndLies?")
+            question(le2mtrans(u"Start") + u" oathAndLies?")
         if not confirmation:
             return
 
-        # création partie
+        # init part ============================================================
         yield (self._le2mserv.gestionnaire_experience.init_part(
             "oathAndLies", "PartieOL", "RemoteOL", pms))
         self._tous = self._le2mserv.gestionnaire_joueurs.get_players(
             'oathAndLies')
-        
-        # formation des groupes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        try:
-            self._le2mserv.gestionnaire_groupes.former_groupes(
-                self._le2mserv.gestionnaire_joueurs.get_players(),
-                pms.TAILLE_GROUPES, forcer_nouveaux=True)
-        except ValueError as e:
-            self._le2mserv.gestionnaire_graphique.display_error(e.message)
-            return
 
-        # attribution des roles
-        self._le2mserv.gestionnaire_graphique.infoserv(u"Roles (A, B)")
+        # groups
+        self._le2mserv.gestionnaire_groupes.former_groupes(
+            self._le2mserv.gestionnaire_joueurs.get_players(),
+            pms.TAILLE_GROUPES, forcer_nouveaux=True)
+
+        # roles
+        self._le2mserv.gestionnaire_graphique.infoserv(
+            le2mtrans(u"Roles") + u" (A, B)")
         for g, m in self._le2mserv.gestionnaire_groupes.get_groupes(
-                "oathAndLies").iteritems():
+                "oathAndLies").viewitems():
             m[0].role = pms.JOUEUR_A
             m[1].role = pms.JOUEUR_B
             self._le2mserv.gestionnaire_graphique.infoserv(
@@ -86,56 +87,59 @@ class Serveur(object):
         self._tous_A = [j for j in self._tous if j.role == pms.JOUEUR_A]
         self._tous_B = [j for j in self._tous if j.role == pms.JOUEUR_B]
 
-        # pour configure les clients et les remotes ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # set parameters on remotes
         yield (self._le2mserv.gestionnaire_experience.run_step(
             u"Configure", self._tous, "configure"))
     
-        # DEBUT DES RÉPÉTITIONS ================================================
+        # Start part ===========================================================
         for period in xrange(1 if pms.NOMBRE_PERIODES else 0,
                              pms.NOMBRE_PERIODES + 1):
 
             if self._le2mserv.gestionnaire_experience.stop_repetitions:
                 break
 
-            # initialisation période ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # init period
             self._le2mserv.gestionnaire_graphique.infoserv(
-                [None, u"Période {}".format(period)])
+                [None, le2mtrans(u"Period") + u" {}".format(period)])
             self._le2mserv.gestionnaire_graphique.infoclt(
-                [None, u"Période {}".format(period)], fg="white", bg="gray")
+                [None, le2mtrans(u"Period") + u" {}".format(period)],
+                fg="white", bg="gray")
             yield (self._le2mserv.gestionnaire_experience.run_func(
                 self._tous, "newperiod", period))
 
-            # affichage roles
+            # display roles
             yield (self._le2mserv.gestionnaire_experience.run_step(
                 "Roles", self._tous, "display_role"))
             
-            # décision des A ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # decision of A players
             yield(self._le2mserv.gestionnaire_experience.run_step(
-                u"Décision A", self._tous_A, "display_decision"))
+                le2mtrans(u"Decision") + u" A", self._tous_A,
+                "display_decision"))
 
-            # set tirage et message de A dans base de B
+            # set tirage and store A decision in B's data
             for m in self._le2mserv.gestionnaire_groupes.get_groupes(
                     "oathAndLies").itervalues():
                 m[1].currentperiod.OL_tirage = m[0].currentperiod.OL_tirage
                 m[1].currentperiod.OL_message = m[0].currentperiod.OL_message
 
-            # décision des B ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # decision of B players
             yield(self._le2mserv.gestionnaire_experience.run_step(
-                u"Décision B", self._tous_B, "display_decision"))
+                le2mtrans(u"Decision") + u" B", self._tous_B,
+                "display_decision"))
 
-            # set décision B dans base A
+            # set decision of B in A's data
             for m in self._le2mserv.gestionnaire_groupes.get_groupes(
                     "oathAndLies").itervalues():
                 m[0].currentperiod.OL_decision = m[1].currentperiod.OL_decision
 
-            # calcul des gains de la période ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # period payoffs
             self._le2mserv.gestionnaire_experience.compute_periodpayoffs(
                 "oathAndLies")
         
-            # affichage du récapitulatif ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # summary
             yield(self._le2mserv.gestionnaire_experience.run_step(
-                u"Récapitulatif", self._tous, "display_summary"))
+                le2mtrans(u"Summary"), self._tous, "display_summary"))
         
-        # FIN DE LA PARTIE =====================================================
+        # End of part ==========================================================
         yield (self._le2mserv.gestionnaire_experience.finalize_part(
             "oathAndLies"))
