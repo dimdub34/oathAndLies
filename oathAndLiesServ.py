@@ -7,7 +7,6 @@ from util import utiltools
 import oathAndLiesParams as pms
 from oathAndLiesGui import DConfiguration
 from util.utili18n import le2mtrans
-import oathAndLiesTexts as texts_OL
 
 
 logger = logging.getLogger("le2m.{}".format(__name__))
