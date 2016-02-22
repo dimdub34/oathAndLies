@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: oathAndLies\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-02-22 17:07+0100\n"
-"PO-Revision-Date: 2016-02-22 17:08+0100\n"
+"POT-Creation-Date: 2016-02-22 17:13+0100\n"
+"PO-Revision-Date: 2016-02-22 17:16+0100\n"
 "Last-Translator: Dimitri DUBOIS <dimitri.dubois@umontpellier.fr>\n"
 "Language-Team: Dimitri DUBOIS <dimitri.dubois@umontpellier.fr>\n"
 "Language: en_US\n"
@@ -45,6 +45,7 @@ msgid "The outcome of the dice toss is"
 msgstr ""
 
 #: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:113
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:285
 msgid "You must enter a number between 1 and 6"
 msgstr ""
 
