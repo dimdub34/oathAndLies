@@ -64,7 +64,8 @@ class WGains(QtGui.QWidget):
         self.ui.label_x.setText(texts_OL.trans_OL(u"Option") + u" " + options[0])
         self.ui.label_y.setText(texts_OL.trans_OL(u"Option") + u" " + options[1])
         self.ui.pushButton_ok.setText(u"Ok")
-        self.ui.pushButton_ok.clicked.connect(lambda _: self.setEnabled(False))
+        self.ui.pushButton_ok.clicked.connect(
+            lambda _: self.ui.pushButton_ok.setEnabled(False))
 
         if automatique:
             self._timer = QtCore.QTimer()
@@ -97,7 +98,7 @@ class WDiceToss(QtGui.QWidget):
 
     def _click(self):
         self.ui.spinBox.setValue(random.randint(1, 6))
-        self.setEnabled(False)
+        self.ui.pushButton.setEnabled(False)
 
     def set_enabled(self):
         self.setEnabled(True)
@@ -243,7 +244,8 @@ class WMsgA(QtGui.QWidget):
         self.ui.label_message.setText(u"<em>" + texts_OL.trans_OL(
             u"the outcome of the dice toss is") + u" {}</em>".format(val_de))
         self.ui.pushButton.setText(u"Ok")
-        self.ui.pushButton.clicked.connect(lambda _: self.setEnabled(False))
+        self.ui.pushButton.clicked.connect(
+            lambda _: self.ui.pushButton.setEnabled(False))
 
         if automatique:
             self._timer = QtCore.QTimer()
@@ -280,6 +282,9 @@ class WChoiceB(QtGui.QWidget):
             self._timer.start(self._autotime)
 
     def get_value(self):
+        if self.ui.spinBox.value() == 0:
+            raise ValueError(texts_OL.trans_OL(
+                u"You must enter a number between 1 and 6"))
         return self.ui.spinBox.value()
 
 
@@ -329,6 +334,13 @@ class DDecisionB(QtGui.QDialog):
             self._timer.stop()
         except AttributeError:
             pass
+
+        try:
+            choice = self._widChoiceB.get_value()
+        except ValueError as e:
+            return QtGui.QMessageBox.warning(
+                self, le2mtrans(u"Warning"), e.message)
+
         if not self._automatique:
             if QtGui.QMessageBox.question(
                 self, le2mtrans(u"Confirmation"),
@@ -336,10 +348,10 @@ class DDecisionB(QtGui.QDialog):
                 QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)!= \
                     QtGui.QMessageBox.Yes:
                 return
-        dec = self._widChoiceB.get_value()
-        logger.info(u"Send back {}".format(dec))
+
+        logger.info(u"Send back {}".format(choice))
         self.accept()
-        self._defered.callback(dec)
+        self._defered.callback(choice)
 
     def _set_connections(self):
         self._widMsgA.ui.pushButton.clicked.connect(

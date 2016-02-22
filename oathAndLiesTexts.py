@@ -66,7 +66,7 @@ def get_text_explanation(role):
               u"Vous devez enfin choisir le message que vous transmettez à B."
 
     else:
-        txt = u"Vous êtes un participant B.<br />" \
+        txt = u"Vous êtes joueur B.<br />" \
               u"Vous devez prendre connaissance du message transmis par le " \
               u"joueur A.<br />" \
               u"Vous devez ensuite choisir un nombre compris entre 1 et 6."
