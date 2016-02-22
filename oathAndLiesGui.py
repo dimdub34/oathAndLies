@@ -2,12 +2,13 @@
 
 from PyQt4 import QtGui, QtCore
 import logging
-from client.cltgui.cltguiwidgets import WExplication, WCombo, WSpinbox
-from util.utilwidgets import WDice
+from client.cltgui.cltguiwidgets import WExplication, WCombo
 import oathAndLiesParams as pms
 import oathAndLiesTexts as texts_OL
-from oathAndLiesGuiSrc import OL_widgains
+from oathAndLiesGuiSrc import OL_widgains, OL_widMsgA, OL_widChoiceB, \
+    OL_widDicetoss, OL_widChoiceMsg
 from util.utili18n import le2mtrans
+import random
 
 
 logger = logging.getLogger("le2m")
@@ -18,13 +19,14 @@ class DConfiguration(QtGui.QDialog):
         super(DConfiguration, self).__init__(parent)
 
         layout = QtGui.QVBoxLayout(self)
+        treats = [v.upper() for k, v in sorted(pms.TREATMENTS.viewitems())]
         self._widtreat = WCombo(
-            label=u"Traitement", items=["SANS_SERMENT", "AVEC_SERMENT"],
+            label=texts_OL.trans_OL(u"Treatment"), items=treats,
             parent=self)
         layout.addWidget(self._widtreat)
 
         self._widgame = WCombo(
-            label=u"Sélectionner le jeu",
+            label=texts_OL.trans_OL(u"Select the game"),
             items=map(str, sorted(pms.CODES_PERIODES.viewkeys())), parent=self)
         self._widgame.ui.comboBox.setCurrentIndex(pms.GAME - 1)
         layout.addWidget(self._widgame)
@@ -53,14 +55,98 @@ class DConfiguration(QtGui.QDialog):
 class WGains(QtGui.QWidget):
     def __init__(self, automatique=False, parent=None, autotime=1000):
         super(WGains, self).__init__(parent)
+
         self.ui = OL_widgains.Ui_Form()
         self.ui.setupUi(self)
-        self.ui.label_x.setText(u"Option X:")
-        self.ui.label_y.setText(u"Option Y:")
+
+        self.ui.groupBox.setTitle(texts_OL.trans_OL(u"Payoffs"))
+        options = [v.upper() for k, v in sorted(pms.OPTIONS.viewitems())]
+        self.ui.label_x.setText(texts_OL.trans_OL(u"Option") + u" " + options[0])
+        self.ui.label_y.setText(texts_OL.trans_OL(u"Option") + u" " + options[1])
+        self.ui.pushButton_ok.setText(u"Ok")
+        self.ui.pushButton_ok.clicked.connect(lambda _: self.setEnabled(False))
+
         if automatique:
             self._timer = QtCore.QTimer()
+            self._timer.setSingleShot(True)
             self._timer.timeout.connect(self.ui.pushButton_ok.click)
             self._timer.start(autotime)
+
+
+class WDiceToss(QtGui.QWidget):
+    def __init__(self, parent, automatique, autotime=1000):
+        super(WDiceToss, self).__init__(parent)
+
+        self._automatique = automatique
+        self._autotime = autotime
+
+        self.ui = OL_widDicetoss.Ui_Form()
+        self.ui.setupUi(self)
+
+        self.ui.groupBox.setTitle(texts_OL.trans_OL(u"Dice toss"))
+        self.ui.pushButton.setText(u"Toss the dice")
+        self.ui.pushButton.clicked.connect(self._click)
+        self.ui.label.setText(texts_OL.trans_OL(
+            u"The outcome of the dice toss is"))
+        self.ui.spinBox.setReadOnly(True)
+        self.ui.spinBox.setButtonSymbols(QtGui.QSpinBox.NoButtons)
+        self.ui.spinBox.setMinimum(0)
+        self.ui.spinBox.setMaximum(6)
+        self.ui.spinBox.setSingleStep(1)
+        self.ui.spinBox.setValue(0)
+
+    def _click(self):
+        self.ui.spinBox.setValue(random.randint(1, 6))
+        self.setEnabled(False)
+
+    def set_enabled(self):
+        self.setEnabled(True)
+        if self._automatique:
+            self._timer = QtCore.QTimer()
+            self._timer.setSingleShot(True)
+            self._timer.timeout.connect(self.ui.pushButton.click)
+            self._timer.start(self._autotime)
+
+    def get_value(self):
+        if self.ui.spinBox.value() == 0:
+            raise ValueError(texts_OL.trans_OL(
+                u"You must enter a number between 1 and 6"))
+        return self.ui.spinBox.value()
+
+
+class WChoiceMsg(QtGui.QWidget):
+    def __init__(self, parent, automatique, autotime=1000):
+        super(WChoiceMsg, self).__init__(parent)
+
+        self._automatique = automatique
+        self._autotime = autotime
+
+        self.ui = OL_widChoiceMsg.Ui_Form()
+        self.ui.setupUi(self)
+
+        self.ui.groupBox.setTitle(texts_OL.trans_OL(u"Message to B"))
+        self.ui.label.setText(texts_OL.trans_OL(
+            u"Select the message you sent to player B"))
+        self._msg = [le2mtrans(u"Choose")]
+        self._msg.extend([texts_OL.trans_OL(
+            u"The outcome of the dice toss is") + u" {}".format(i) for i in
+                         range(1, 7)])
+        self.ui.comboBox.addItems(self._msg)
+
+    def get_currentindex(self):
+        if self.ui.comboBox.currentIndex() == 0:
+            raise ValueError(texts_OL.trans_OL(u"You must choose a message"))
+        return self.ui.comboBox.currentIndex()
+
+    def set_enabled(self):
+        self.setEnabled(True)
+        if self._automatique:
+            self._timer = QtCore.QTimer()
+            self._timer.setSingleShot(True)
+            self._timer.timeout.connect(
+                lambda _: self.ui.comboBox.setCurrentIndex(
+                    random.randint(1, len(self._msg))))
+            self._timer.start(self._autotime)
 
 
 class DDecisionA(QtGui.QDialog):
@@ -78,44 +164,42 @@ class DDecisionA(QtGui.QDialog):
         layout.addWidget(self._widexplication)
 
         self._widgains = WGains(automatique=self._automatique, parent=self)
-        self._widgains.ui.pushButton_ok.clicked.connect(
-            lambda _: self._widdice.setEnabled(True))
         layout.addWidget(self._widgains)
 
-        self._widdice = WDice(automatique=self._automatique, parent=self,
-                                   tries=1, speed=10, autotime=2000)
-        self._widdice.ui.pushButton_stop.clicked.connect(
-            lambda _: self._widmessage.setEnabled(True))
-        layout.addWidget(self._widdice)
-        self._widdice.setEnabled(False)
+        self._widdicetoss = WDiceToss(parent=self, automatique=self._automatique)
+        self._widdicetoss.setEnabled(False)
+        layout.addWidget(self._widdicetoss)
 
-        messages = [u"Choisir"]
-        messages.extend([u"Le résultat du lancé de dé est {}".format(i) for
-                         i in range(1, 7)])
-        self._widmessage = WCombo(
-            label=u"Sélectionnez le message que vous transmettez au joueur B",
-            items=messages, automatique=self._automatique, parent=self,
-            autotime=4000)
-        self._widmessage.ui.comboBox.currentIndexChanged.connect(
-            lambda x: buttons.setEnabled(x))
-        layout.addWidget(self._widmessage)
-        self._widmessage.setEnabled(False)
+        self._widChoicemsg = WChoiceMsg(parent=self,
+                                        automatique=self._automatique)
+        self._widChoicemsg.setEnabled(False)
+        layout.addWidget(self._widChoicemsg)
 
-        buttons = QtGui.QDialogButtonBox(
+        self._buttons = QtGui.QDialogButtonBox(
             QtGui.QDialogButtonBox.Ok, QtCore.Qt.Horizontal, self)
-        buttons.accepted.connect(self._accept)
-        layout.addWidget(buttons)
-        buttons.setEnabled(False)
+        self._buttons.accepted.connect(self._accept)
+        self._buttons.setEnabled(False)
+        layout.addWidget(self._buttons)
+
+        self._set_connections()
 
         if self._automatique:
             self._timer = QtCore.QTimer()
             self._timer.timeout.connect(
-                buttons.button(QtGui.QDialogButtonBox.Ok).click)
+                self._buttons.button(QtGui.QDialogButtonBox.Ok).click)
             self._timer.start(8000)
 
-        self.setWindowTitle(u"Décision")
+        self.setWindowTitle(le2mtrans(u"Decision"))
         self.adjustSize()
         self.setFixedSize(self.size())
+
+    def _set_connections(self):
+        self._widgains.ui.pushButton_ok.clicked.connect(
+            self._widdicetoss.set_enabled)
+        self._widdicetoss.ui.pushButton.clicked.connect(
+            self._widChoicemsg.set_enabled)
+        self._widChoicemsg.ui.comboBox.currentIndexChanged.connect(
+            lambda x: self._buttons.setEnabled(x))
 
     def reject(self):
         pass
@@ -125,21 +209,82 @@ class DDecisionA(QtGui.QDialog):
             self._timer.stop()
         except AttributeError:
             pass
+
+        try:
+            dice = self._widdicetoss.get_value()
+            msg = self._widChoicemsg.get_currentindex()
+        except ValueError as e:
+            return QtGui.QMessageBox.warning(
+                self, le2mtrans(u"Warning"), e.message)
+
         if not self._automatique:
             conf = QtGui.QMessageBox.question(
-                self, u"Confirmation", u"Vous confirmez votre choix?",
+                self, le2mtrans(u"Confirmation"),
+                le2mtrans(u"Do you confirm your choice?"),
                 QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
             if conf != QtGui.QMessageBox.Yes:
                 return
-        dec = {"dice": self._widdice.get_dicevalue(),
-               "message": self._widmessage.get_currentindex()}
+        dec = {"dice": dice, "message": msg}
         logger.info(u"Send back {}".format(dec))
         self.accept()
         self._defered.callback(dec)
 
 
+class WMsgA(QtGui.QWidget):
+    def __init__(self, parent, automatique, val_de, autotime=1000):
+        super(WMsgA, self).__init__(parent)
+
+        self.ui = OL_widMsgA.Ui_Form()
+        self.ui.setupUi(self)
+
+        self.ui.groupBox.setTitle(texts_OL.trans_OL(u"Message from A"))
+        self.ui.label_explanation.setText(texts_OL.trans_OL(
+            u"Player A sends you the message") + u": ")
+        self.ui.label_message.setText(u"<em>" + texts_OL.trans_OL(
+            u"the outcome of the dice toss is") + u" {}</em>".format(val_de))
+        self.ui.pushButton.setText(u"Ok")
+        self.ui.pushButton.clicked.connect(lambda _: self.setEnabled(False))
+
+        if automatique:
+            self._timer = QtCore.QTimer()
+            self._timer.setSingleShot(True)
+            self._timer.timeout.connect(self.ui.pushButton.click)
+            self._timer.start(autotime)
+
+
+class WChoiceB(QtGui.QWidget):
+    def __init__(self, parent, automatique, autotime=1000):
+        super(WChoiceB, self).__init__(parent)
+
+        self._automatique = automatique
+        self._autotime = autotime
+
+        self.ui = OL_widChoiceB.Ui_Form()
+        self.ui.setupUi(self)
+
+        self.ui.groupBox.setTitle(texts_OL.trans_OL(u"Choice of a number"))
+        self.ui.label.setText(texts_OL.trans_OL(
+            u"Enter a number between 1 and 6"))
+        self.ui.spinBox.setMinimum(0)
+        self.ui.spinBox.setMaximum(6)
+        self.ui.spinBox.setSingleStep(1)
+        self.ui.spinBox.setButtonSymbols(QtGui.QSpinBox.NoButtons)
+        self.ui.spinBox.setValue(0)
+
+    def _enabled(self):
+        if self._automatique:
+            self._timer = QtCore.QTimer()
+            self._timer.setSingleShot(True)
+            self._timer.timeout.connect(lambda _: self.ui.spinBox.setValue(
+                random.randint(1, 6)))
+            self._timer.start(self._autotime)
+
+    def get_value(self):
+        return self.ui.spinBox.value()
+
+
 class DDecisionB(QtGui.QDialog):
-    def __init__(self, defered, automatique, parent, message):
+    def __init__(self, defered, automatique, parent, val_de):
         super(DDecisionB, self).__init__(parent)
         self._defered = defered
         self._automatique = automatique
@@ -151,33 +296,28 @@ class DDecisionB(QtGui.QDialog):
             size=(450, 80))
         layout.addWidget(self._widExplication)
 
-        layout_message = QtGui.QHBoxLayout()
-        layout_message.addSpacerItem(QtGui.QSpacerItem(
-            20, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
-        self._labelMessage = QtGui.QLabel(
-            u"Message de A: le résultat du lancé de dé est {}".format(message))
-        layout_message.addWidget(self._labelMessage)
-        layout_message.addSpacerItem(QtGui.QSpacerItem(
-            20, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
-        layout.addLayout(layout_message)
+        self._widMsgA = WMsgA(parent=self, automatique=self._automatique,
+                              val_de=val_de)
+        layout.addWidget(self._widMsgA)
 
-        self._widDecision = WSpinbox(
-            label=u"Choisissez un nombre", minimum=1, maximum=6,
-            automatique=self._automatique, parent=self)
-        layout.addWidget(self._widDecision)
+        self._widChoiceB = WChoiceB(parent=self, automatique=self._automatique)
+        self._widChoiceB.setEnabled(False)
+        layout.addWidget(self._widChoiceB)
 
-        buttons = QtGui.QDialogButtonBox(
-            QtGui.QDialogButtonBox.Ok, QtCore.Qt.Horizontal, self)
-        buttons.accepted.connect(self._accept)
-        layout.addWidget(buttons)
+        self._buttons = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
+        self._buttons.accepted.connect(self._accept)
+        self._buttons.setEnabled(False)
+        layout.addWidget(self._buttons)
+
+        self._set_connections()
 
         if self._automatique:
             self._timer = QtCore.QTimer()
             self._timer.timeout.connect(
-                buttons.button(QtGui.QDialogButtonBox.Ok).click)
+                self._buttons.button(QtGui.QDialogButtonBox.Ok).click)
             self._timer.start(7000)
 
-        self.setWindowTitle(u"Décision")
+        self.setWindowTitle(le2mtrans(u"Decision"))
         self.adjustSize()
         self.setFixedSize(self.size())
 
@@ -190,13 +330,19 @@ class DDecisionB(QtGui.QDialog):
         except AttributeError:
             pass
         if not self._automatique:
-            conf = QtGui.QMessageBox.question(
-                self, u"Confirmation", u"Vous confirmez votre choix?",
-                QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
-            if conf != QtGui.QMessageBox.Yes:
+            if QtGui.QMessageBox.question(
+                self, le2mtrans(u"Confirmation"),
+                le2mtrans(u"Do you confirm your choice?"),
+                QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)!= \
+                    QtGui.QMessageBox.Yes:
                 return
-        dec = self._widDecision.get_value()
+        dec = self._widChoiceB.get_value()
         logger.info(u"Send back {}".format(dec))
         self.accept()
         self._defered.callback(dec)
 
+    def _set_connections(self):
+        self._widMsgA.ui.pushButton.clicked.connect(
+            lambda _: self._widChoiceB.setEnabled(True))
+        self._widChoiceB.ui.spinBox.valueChanged.connect(
+            lambda _: self._buttons.setEnabled(True))

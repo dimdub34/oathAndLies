@@ -52,7 +52,7 @@ class Serveur(object):
         :return:
         """
         # Check conditions =====================================================
-        if self._le2mserv.gestionnaire_joueurs.nombre % pms.TAILLE_GROUPES > 0:
+        if self._le2mserv.gestionnaire_joueurs.nombre_joueurs % pms.TAILLE_GROUPES > 0:
             self._le2mserv.gestionnaire_graphique.display_error(
                 le2mtrans(u"The number of players is not compatible with the "
                           u"group size"))

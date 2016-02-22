@@ -44,6 +44,12 @@ class PartieOL(Partie):
         self.joueur.info(u"Ok")
 
     @defer.inlineCallbacks
+    def display_role(self):
+        yield (self.remote.callRemote("display_role", self._role))
+        self.joueur.info("Ok")
+        self.joueur.remove_waitmode()
+
+    @defer.inlineCallbacks
     def newperiod(self, period):
         logger.debug(u"{} New Period".format(self.joueur))
         self.currentperiod = RepetitionsOL(period)
@@ -56,11 +62,6 @@ class PartieOL(Partie):
         yield (self.remote.callRemote("newperiod", period))
         logger.info(u"{} Ready for period {}".format(self.joueur, period))
 
-    @defer.inlineCallbacks
-    def display_role(self):
-        yield (self.remote.callRemote("display_role"), self._role)
-        self.joueur.info("Ok")
-        self.joueur.remove_waitmode()
 
     @defer.inlineCallbacks
     def display_decision(self):
