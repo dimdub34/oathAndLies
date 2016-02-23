@@ -85,7 +85,7 @@ class WDiceToss(QtGui.QWidget):
         self.ui.setupUi(self)
 
         self.ui.groupBox.setTitle(texts_OL.trans_OL(u"Dice toss"))
-        self.ui.pushButton.setText(u"Toss the dice")
+        self.ui.pushButton.setText(texts_OL.trans_OL(u"Toss the dice"))
         self.ui.pushButton.clicked.connect(self._click)
         self.ui.label.setText(texts_OL.trans_OL(
             u"The outcome of the dice toss is"))
