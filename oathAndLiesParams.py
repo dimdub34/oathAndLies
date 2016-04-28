@@ -2,8 +2,10 @@
 
 # variables
 TREATMENTS = {
-    0: u"sans_serment",
-    1: u"avec_serment"
+    0: u"sans_serment_neutre",
+    1: u"sans_serment_framed",
+    2: u"avec_serment_neutre",
+    3: u"avec_serment_framed"
 }
 
 OPTION_X = 0
@@ -17,10 +19,8 @@ JOUEUR_A = 0
 JOUEUR_B = 1
 
 CODES_PERIODES = {
-    1: [(20, 20), (15, 30)],
-    2: [(20, 20), (21, 15)],
-    3: [(20, 20), (30, 30)],
-    4: [(30, 30), (20, 20)]
+    1: [(20, 20), (21, 15)],
+    2: [(20, 20), (30, 30)],
 }
 
 # parameters
