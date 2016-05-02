@@ -73,3 +73,42 @@ def get_text_explanation(role):
 
     return txt
 
+
+ADDITIONNAL_QUESTIONS = {
+    1: {
+        "text": u"En utilisant l'échelle ci-contre, indiquez votre "
+                         u"niveau de certitude<br />au moment où vous avez "
+                         u"pris votre décision, sachant que<br />"
+                         u"1=totalement incertain et 10=totalement certain",
+        "items": map(str, range(1, 11))
+    },
+    2: {
+        "text": u"En utilisant l'échelle ci-contre, indiquez à quel "
+                         u"point, <br />vous êtes heureux(se) en ce moment, "
+                         u"sachant que<br />"
+                         u"1=totalement triste et 7=totalement heureux(se)",
+        "items": map(str, range(1, 8))
+    },
+    3: {
+        "text": u"En utilisant l'échelle ci-dessous, indiquez dans "
+                         u"quelle mesure<br />vous avez été honnête durant "
+                         u"l'expérience, sachant que<br />1=totalement "
+                         u"malhonnête et 7=totalement honnête",
+        "items": map(str, range(1, 8))
+    },
+    4: {
+        "text": u"En utilisant l'échelle ci-dessous, indiquez dans "
+                         u"quelle mesure<br />les autres sujets ont été honnêtes "
+                         u"durant l'expérience, sachant que<br />1=totalement "
+                         u"malhonnête et 7=totalement honnête",
+        "items": map(str, range(1, 8))
+    }
+}
+
+
+def get_text_question(num_question):
+    return ADDITIONNAL_QUESTIONS.get(num_question)["text"]
+
+
+def get_items_question(num_question):
+    return ADDITIONNAL_QUESTIONS.get(num_question)["items"]

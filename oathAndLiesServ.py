@@ -5,6 +5,7 @@ from collections import OrderedDict
 from twisted.internet import defer
 from util import utiltools
 import oathAndLiesParams as pms
+import oathAndLiesTexts as texts_OL
 from oathAndLiesGui import DConfiguration
 from util.utili18n import le2mtrans
 
@@ -25,11 +26,19 @@ class Serveur(object):
             display_information2(
                 utiltools.get_module_info(pms), le2mtrans(u"Parameters"))
         actions[le2mtrans(u"Start")] = lambda _: self._demarrer()
+        actions[texts_OL.trans_OL(u"Display additional questions")] = \
+            lambda _: self._display_additionalquestion()
         actions[le2mtrans(u"Display payoffs")] = \
             lambda _: self._le2mserv.gestionnaire_experience.\
             display_payoffs_onserver("oathAndLies")
         self._le2mserv.gestionnaire_graphique.add_topartmenu(
             u"Oath and Lies", actions)
+
+        # final questionnaire
+        self._le2mserv.gestionnaire_graphique.screen.action_finalquest. \
+            triggered.disconnect()
+        self._le2mserv.gestionnaire_graphique.screen.action_finalquest. \
+            triggered.connect(lambda _: self._display_questfinal())
 
     def _configure(self):
         """
@@ -91,8 +100,8 @@ class Serveur(object):
             u"Configure", self._tous, "configure"))
     
         # Start part ===========================================================
-        for period in xrange(1 if pms.NOMBRE_PERIODES else 0,
-                             pms.NOMBRE_PERIODES + 1):
+        for period in range(1 if pms.NOMBRE_PERIODES else 0,
+                            pms.NOMBRE_PERIODES + 1):
 
             if self._le2mserv.gestionnaire_experience.stop_repetitions:
                 break
@@ -117,7 +126,7 @@ class Serveur(object):
 
             # set tirage and store A decision in B's data
             for m in self._le2mserv.gestionnaire_groupes.get_groupes(
-                    "oathAndLies").itervalues():
+                    "oathAndLies").viewvalues():
                 m[1].currentperiod.OL_tirage = m[0].currentperiod.OL_tirage
                 m[1].currentperiod.OL_message = m[0].currentperiod.OL_message
 
@@ -128,7 +137,7 @@ class Serveur(object):
 
             # set decision of B in A's data
             for m in self._le2mserv.gestionnaire_groupes.get_groupes(
-                    "oathAndLies").itervalues():
+                    "oathAndLies").viewvalues():
                 m[0].currentperiod.OL_decision = m[1].currentperiod.OL_decision
 
             # period payoffs
@@ -142,3 +151,43 @@ class Serveur(object):
         # End of part ==========================================================
         yield (self._le2mserv.gestionnaire_experience.finalize_part(
             "oathAndLies"))
+
+    @defer.inlineCallbacks
+    def _display_additionalquestion(self):
+        players = self._le2mserv.gestionnaire_joueurs.get_players(
+            "voteMajorite")
+        if not players:
+            self._le2mserv.gestionnaire_graphique.display_warning(
+                texts_OL.trans_OL(u"You must start the part before to run "
+                                  u"the questionnaire"))
+            return
+        if not self._le2mserv.gestionnaire_graphique.question(
+                texts_OL.trans_OL(u"Do you want to start additional questions?")):
+            return
+
+        self._le2mserv.gestionnaire_graphique.infoclt(None)
+
+        yield (self._le2mserv.gestionnaire_experience.run_step(
+            texts_OL.trans_OL(u"Additional questions"), players,
+            "display_additionalquestion"))
+
+    @defer.inlineCallbacks
+    def _display_questfinal(self):
+        if not self._le2mserv.gestionnaire_base.is_created():
+            self._le2mserv.gestionnaire_graphique.display_warning(
+                le2mtrans(u"There is no database yet. You first need to "
+                          u"load at least one part."))
+            return
+        if not hasattr(self, "_tous"):
+            self._le2mserv.gestionnaire_graphique.display_warning(
+                texts_OL.trans_OL(u"You must play the part before to "
+                                  u"start the questionnaire"))
+            return
+
+        if not self._le2mserv.gestionnaire_graphique.question(
+                le2mtrans(u"Start the final questionnaire?")):
+            return
+
+        yield (self._le2mserv.gestionnaire_experience.run_step(
+            le2mtrans(u"Final questionnaire"), self._tous,
+            "display_questfinal"))

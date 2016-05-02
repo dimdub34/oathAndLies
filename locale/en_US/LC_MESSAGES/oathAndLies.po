@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: oathAndLies\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-02-23 13:02+0100\n"
-"PO-Revision-Date: 2016-02-23 13:03+0100\n"
+"POT-Creation-Date: 2016-05-02 15:56+0200\n"
+"PO-Revision-Date: 2016-05-02 15:56+0100\n"
 "Last-Translator: Dimitri DUBOIS <dimitri.dubois@umontpellier.fr>\n"
 "Language-Team: Dimitri DUBOIS <dimitri.dubois@umontpellier.fr>\n"
 "Language: en_US\n"
@@ -18,69 +18,93 @@ msgstr ""
 "X-Generator: Poedit 1.5.4\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:24
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesServ.py:29
+msgid "Display additional questions"
+msgstr ""
+
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesServ.py:161
+msgid "You must start the part before to run the questionnaire"
+msgstr ""
+
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesServ.py:165
+msgid "Do you want to start additional questions?"
+msgstr ""
+
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesServ.py:171
+msgid "Additional questions"
+msgstr ""
+
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesServ.py:183
+msgid "You must play the part before to start the questionnaire"
+msgstr ""
+
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:25
 msgid "Treatment"
 msgstr ""
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:29
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:30
 msgid "Select the game"
 msgstr ""
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:62
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:63
 msgid "Payoffs"
 msgstr ""
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:64
 #: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:65
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:66
 msgid "Option"
 msgstr ""
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:87
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:88
 msgid "Dice toss"
 msgstr ""
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:88
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:89
 msgid "Toss the dice"
 msgstr ""
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:91
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:133
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:92
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:134
 msgid "The outcome of the dice toss is"
 msgstr ""
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:114
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:287
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:115
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:288
 msgid "You must enter a number between 1 and 6"
 msgstr ""
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:128
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:129
 msgid "Message to B"
 msgstr ""
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:130
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:131
 msgid "Select the message you sent to player B"
 msgstr ""
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:139
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:140
 msgid "You must choose a message"
 msgstr ""
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:241
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:242
 msgid "Message from A"
 msgstr ""
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:243
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:244
 msgid "Player A sends you the message"
 msgstr ""
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:245
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:246
 msgid "the outcome of the dice toss is"
 msgstr ""
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:267
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:268
 msgid "Choice of a number"
 msgstr ""
 
-#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:269
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:270
 msgid "Enter a number between 1 and 6"
+msgstr ""
+
+#: /home/irtimid/Documents/travail/programmes/le2m-v2.1/le2m/parts/oathAndLies/oathAndLiesGui.py:453
+msgid "You must select one item"
 msgstr ""

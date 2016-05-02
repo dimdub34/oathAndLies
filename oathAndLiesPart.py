@@ -4,12 +4,13 @@ import logging
 from datetime import datetime
 from twisted.internet import defer
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, Float, ForeignKey
+from sqlalchemy import Column, Integer, Float, ForeignKey, String
 from collections import OrderedDict
 from server.servbase import Base
 from server.servparties import Partie
 from util.utiltools import get_module_attributes
 import oathAndLiesParams as pms
+import oathAndLiesTexts as texts_OL
 
 
 logger = logging.getLogger("le2m")
@@ -142,6 +143,30 @@ class PartieOL(Partie):
         logger.info(u'{} Payoff ecus {} Payoff euros {:.2f}'.format(
             self.joueur, self.OL_gain_ecus, self.OL_gain_euros))
 
+    @defer.inlineCallbacks
+    def display_additionalquestion(self):
+        logger.debug(u"display_additionalquestion")
+        for k in sorted(texts_OL.ADDITIONNAL_QUESTIONS.viewkeys()):
+            tmp = yield (self.remote.callRemote(
+                "display_additionalquestion", k))
+            setattr(self.periods.get(1), "VM_question_{}".format(k), tmp)
+        self.joueur.info(u"Ok")
+        self.joueur.remove_waitmode()
+
+
+    @defer.inlineCallbacks
+    def display_questfinal(self):
+        logger.debug(u"{} display_finalquest".format(self.joueur))
+        inputs = yield (self.remote.callRemote("display_finalquest"))
+        part_questfinal = self.joueur.get_part("questionnaireFinal")
+        for k, v in inputs.viewitems():
+            if k == "naissance_ville":
+                setattr(self.periods.get(1), "VM_{}".format(k), v)
+            else:
+                setattr(part_questfinal, k, v)
+        self.joueur.info('ok')
+        self.joueur.remove_waitmode()
+
 
 class RepetitionsOL(Base):
     __tablename__ = 'partie_oathAndLies_repetitions'
@@ -162,6 +187,11 @@ class RepetitionsOL(Base):
     OL_appliedoption = Column(Integer)
     OL_periodpayoff = Column(Float)
     OL_cumulativepayoff = Column(Float)
+    OL_question_1 = Column(Integer)
+    OL_question_2 = Column(Integer)
+    OL_question_3 = Column(Integer)
+    OL_question_4 = Column(Integer)
+    OL_naissance_ville = Column(String)
 
     def __init__(self, period):
         self.OL_treatment = pms.TREATMENT

@@ -2,13 +2,14 @@
 
 from PyQt4 import QtGui, QtCore
 import logging
-from client.cltgui.cltguiwidgets import WExplication, WCombo
+from client.cltgui.cltguiwidgets import WExplication, WCombo, WLineEdit, WRadio
 import oathAndLiesParams as pms
 import oathAndLiesTexts as texts_OL
 from oathAndLiesGuiSrc import OL_widgains, OL_widMsgA, OL_widChoiceB, \
     OL_widDicetoss, OL_widChoiceMsg
 from util.utili18n import le2mtrans
 import random
+from client.cltgui.cltguidialogs import DQuestFinal
 
 
 logger = logging.getLogger("le2m")
@@ -358,3 +359,108 @@ class DDecisionB(QtGui.QDialog):
             lambda _: self._widChoiceB.setEnabled(True))
         self._widChoiceB.ui.spinBox.valueChanged.connect(
             lambda _: self._buttons.setEnabled(True))
+
+
+class DQuestFinalOL(DQuestFinal):
+    def __init__(self, defered, automatique, parent):
+        DQuestFinal.__init__(self, defered, automatique, parent)
+
+        self._naissance_ville = WLineEdit(
+            parent=self, automatique=self._automatique,
+            label=u"Ville de naissance",
+            list_of_possible_values=[u"Paris", u"Marseille", u"Lyon",
+                                     u"Montpellier"])
+        self._gridlayout.addWidget(self._naissance_ville, 0, 2)
+
+        self.adjustSize()
+        self.setFixedSize(self.size())
+
+    def _accept(self):
+        try:
+            self._timer_automatique.stop()
+        except AttributeError:
+            pass
+        inputs = self._get_inputs()
+        if type(inputs) is dict:
+
+            try:
+
+                inputs["naissance_ville"] = self._naissance_ville.get_text()
+
+            except ValueError:
+                return QtGui.QMessageBox.warning(
+                    self, le2mtrans(u"Warning"),
+                    le2mtrans(u"You must answer to all the questions"))
+
+            if not self._automatique:
+                if QtGui.QMessageBox.question(
+                    self, le2mtrans(u"Confirmation"),
+                    le2mtrans(u"Do you confirm your answers?"),
+                    QtGui.QMessageBox.No | QtGui.QMessageBox.Yes) != \
+                        QtGui.QMessageBox.Yes: return
+
+            logger.info(u"Send back: {}".format(inputs))
+            self.accept()
+            self._defered.callback(inputs)
+
+        else:
+            return
+
+
+class DEchelle(QtGui.QDialog):
+    def __init__(self, defered, automatique, parent, num_question):
+        super(DEchelle, self).__init__(parent)
+
+        self._defered = defered
+        self._automatique = automatique
+
+        layout = QtGui.QVBoxLayout(self)
+
+        self._radios = WRadio(
+            parent=self, automatique=self._automatique,
+            label=texts_OL.get_text_question(num_question),
+            texts=texts_OL.get_items_question(num_question))
+        layout.addWidget(self._radios)
+
+        buttons = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
+        buttons.accepted.connect(self._accept)
+        layout.addWidget(buttons)
+
+        self.setWindowTitle(le2mtrans(u"Question"))
+        self.adjustSize()
+        self.setFixedSize(self.size())
+
+        if self._automatique:
+            self._timer_automatique = QtCore.QTimer()
+            self._timer_automatique.timeout.connect(
+                buttons.button(QtGui.QDialogButtonBox.Ok).click)
+            self._timer_automatique.start(7000)
+
+    def reject(self):
+        pass
+
+    def _accept(self):
+        try:
+            self._timer_automatique.stop()
+        except AttributeError:
+            pass
+
+        try:
+            checked = self._radios.get_checkedbutton()
+        except ValueError:
+            return QtGui.QMessageBox.warning(
+                self, le2mtrans(u"Warning"),
+                texts_OL.trans_OL(u"You must select one item"))
+
+        if not self._automatique:
+            confirm = QtGui.QMessageBox.question(
+                self, le2mtrans(u"Confirmation"),
+                le2mtrans(u"Do you confirm your choice?"),
+                QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
+            if confirm != QtGui.QMessageBox.Yes:
+                return
+
+        logger.info(u"Send back: {}".format(checked))
+        self.accept()
+        self._defered.callback(checked)
+
