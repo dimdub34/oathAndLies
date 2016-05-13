@@ -161,7 +161,7 @@ class PartieOL(Partie):
         part_questfinal = self.joueur.get_part("questionnaireFinal")
         for k, v in inputs.viewitems():
             if k == "naissance_ville":
-                setattr(self.periods.get(1), "VM_{}".format(k), v)
+                setattr(self.periods.get(1), "OL_{}".format(k), v)
             else:
                 setattr(part_questfinal, k, v)
         self.joueur.info('ok')
