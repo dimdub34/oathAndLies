@@ -149,7 +149,7 @@ class PartieOL(Partie):
         for k in sorted(texts_OL.ADDITIONNAL_QUESTIONS.viewkeys()):
             tmp = yield (self.remote.callRemote(
                 "display_additionalquestion", k))
-            setattr(self.periods.get(1), "VM_question_{}".format(k), tmp)
+            setattr(self.periods.get(1), "OL_question_{}".format(k), tmp)
         self.joueur.info(u"Ok")
         self.joueur.remove_waitmode()
 

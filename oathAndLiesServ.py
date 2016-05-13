@@ -6,14 +6,15 @@ from twisted.internet import defer
 from util import utiltools
 import oathAndLiesParams as pms
 import oathAndLiesTexts as texts_OL
-from oathAndLiesGui import DConfiguration
+from oathAndLiesGui import DConfiguration, DRoles
 from util.utili18n import le2mtrans
-
+from datetime import datetime
+from server.servgest import servgestgroups
 
 logger = logging.getLogger("le2m.{}".format(__name__))
 
 
-class Serveur(object):
+class Serveur:
     def __init__(self, le2mserv):
         self._le2mserv = le2mserv
 
@@ -25,6 +26,7 @@ class Serveur(object):
             lambda _: self._le2mserv.gestionnaire_graphique. \
             display_information2(
                 utiltools.get_module_info(pms), le2mtrans(u"Parameters"))
+        actions[texts_OL.trans_OL(u"Set roles")] = self._set_roles
         actions[le2mtrans(u"Start")] = lambda _: self._demarrer()
         actions[texts_OL.trans_OL(u"Display additional questions")] = \
             lambda _: self._display_additionalquestion()
@@ -66,6 +68,18 @@ class Serveur(object):
                 le2mtrans(u"The number of players is not compatible with the "
                           u"group size"))
             return
+
+        if not hasattr(self, "_players_A"):
+            self._le2mserv.gestionnaire_graphique.display_error(
+                u"Il faut fixer les rôles avant de lancer le jeu")
+            return
+
+        if len(self._players_A) != len(self._players_B):
+            self._le2mserv.gestionnaire_graphique.display_error(
+                u"Le nombre de joueurs A n'est pas égal au nombre de joueurs B")
+            return
+
+        # confirmation =========================================================
         confirmation = self._le2mserv.gestionnaire_graphique.\
             question(le2mtrans(u"Start") + u" oathAndLies?")
         if not confirmation:
@@ -76,24 +90,10 @@ class Serveur(object):
             "oathAndLies", "PartieOL", "RemoteOL", pms))
         self._tous = self._le2mserv.gestionnaire_joueurs.get_players(
             'oathAndLies')
-
-        # groups
-        self._le2mserv.gestionnaire_groupes.former_groupes(
-            self._le2mserv.gestionnaire_joueurs.get_players(),
-            pms.TAILLE_GROUPES, forcer_nouveaux=True)
-
-        # roles
-        self._le2mserv.gestionnaire_graphique.infoserv(
-            le2mtrans(u"Roles") + u" (A, B)")
-        for g, m in self._le2mserv.gestionnaire_groupes.get_groupes(
-                "oathAndLies").viewitems():
-            m[0].role = pms.JOUEUR_A
-            m[1].role = pms.JOUEUR_B
-            self._le2mserv.gestionnaire_graphique.infoserv(
-                u"G{}: A: {}, B: {}".format(
-                    g.split("_")[2], m[0].joueur, m[1].joueur))
-        self._tous_A = [j for j in self._tous if j.role == pms.JOUEUR_A]
-        self._tous_B = [j for j in self._tous if j.role == pms.JOUEUR_B]
+        self._tous_A = [j.get_part("oathAndLies") for j in self._players_A]
+        self._tous_B = [j.get_part("oathAndLies") for j in self._players_B]
+        for p in self._tous:
+            p.role = pms.JOUEUR_A if p in self._tous_A else pms.JOUEUR_B
 
         # set parameters on remotes
         yield (self._le2mserv.gestionnaire_experience.run_step(
@@ -154,9 +154,7 @@ class Serveur(object):
 
     @defer.inlineCallbacks
     def _display_additionalquestion(self):
-        players = self._le2mserv.gestionnaire_joueurs.get_players(
-            "voteMajorite")
-        if not players:
+        if not hasattr(self, "_tous"):
             self._le2mserv.gestionnaire_graphique.display_warning(
                 texts_OL.trans_OL(u"You must start the part before to run "
                                   u"the questionnaire"))
@@ -168,7 +166,7 @@ class Serveur(object):
         self._le2mserv.gestionnaire_graphique.infoclt(None)
 
         yield (self._le2mserv.gestionnaire_experience.run_step(
-            texts_OL.trans_OL(u"Additional questions"), players,
+            texts_OL.trans_OL(u"Additional questions"), self._tous,
             "display_additionalquestion"))
 
     @defer.inlineCallbacks
@@ -191,3 +189,33 @@ class Serveur(object):
         yield (self._le2mserv.gestionnaire_experience.run_step(
             le2mtrans(u"Final questionnaire"), self._tous,
             "display_questfinal"))
+
+    def _set_roles(self):
+        players = self._le2mserv.gestionnaire_joueurs.get_players()
+        try:
+            screen_roles = DRoles(self._le2mserv.gestionnaire_graphique.screen,
+                                  players, self._players_A)
+        except AttributeError:
+            screen_roles = DRoles(self._le2mserv.gestionnaire_graphique.screen,
+                                  players)
+        if screen_roles.exec_():
+            self._players_A = screen_roles.get_players_A()
+            self._players_B = [j for j in players if j not in self._players_A]
+
+            self._le2mserv.gestionnaire_graphique.infoserv(
+                [u"Players A: {}".format(self._players_A),
+                 u"Players B: {}".format(self._players_B)])
+            if self._players_A:
+                self._set_groups()
+
+    def _set_groups(self):
+        groupes = {}
+        pre_id = datetime.now().strftime("%Y%m%d%H%M")
+        for p in zip(self._players_A, self._players_B):
+            id = pre_id + "_g_" + str(servgestgroups.compteur_groupe)
+            groupes[id] = list(p)
+            servgestgroups.compteur_groupe += 1
+        self._le2mserv.gestionnaire_groupes.set_groupes(groupes)
+        self._le2mserv.gestionnaire_groupes.set_attributes()
+        self._le2mserv.gestionnaire_graphique.infoserv(
+            self._le2mserv.gestionnaire_groupes.get_groupes_string())

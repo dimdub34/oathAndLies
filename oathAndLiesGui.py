@@ -2,7 +2,8 @@
 
 from PyQt4 import QtGui, QtCore
 import logging
-from client.cltgui.cltguiwidgets import WExplication, WCombo, WLineEdit, WRadio
+from client.cltgui.cltguiwidgets import WExplication, WCombo, WLineEdit, WRadio, \
+    WListDrag
 import oathAndLiesParams as pms
 import oathAndLiesTexts as texts_OL
 from oathAndLiesGuiSrc import OL_widgains, OL_widMsgA, OL_widChoiceB, \
@@ -51,6 +52,52 @@ class DConfiguration(QtGui.QDialog):
 
     def get_infos(self):
         return self._infos
+
+
+class DRoles(QtGui.QDialog):
+    def __init__(self, serv_screen, players, players_A=None):
+        QtGui.QDialog.__init__(self, serv_screen)
+
+        self._players = players
+
+        layout = QtGui.QVBoxLayout()
+        self.setLayout(layout)
+
+        wexplic = WExplication(parent=self,
+                               text=u"Déplacer les joueurs A dans la liste de "
+                                    u"droite", size=(450, 30))
+        layout.addWidget(wexplic)
+
+        self._drag = WListDrag(parent=self, size=(300, 200))
+        layout.addWidget(self._drag)
+        self._drag.ui.listWidget_left.addItems([u"{} / {}".format(p.hostname, p)
+                                                for p in self._players])
+        if players_A:
+            self._drag.ui.listWidget_right.addItems(
+                [u"{} / {}".format(p.hostname, p) for p in players_A])
+
+        buttons = QtGui.QDialogButtonBox(
+            QtGui.QDialogButtonBox.Cancel | QtGui.QDialogButtonBox.Ok)
+        layout.addWidget(buttons)
+        buttons.accepted.connect(self._accept)
+        buttons.rejected.connect(self.reject)
+
+        self.adjustSize()
+
+    def _accept(self):
+        self._players_A = [j for j in self._players if
+                           u"{} / {}".format(j.hostname, j) in
+                           self._drag.get_rightitems()]
+        logger.info("A: {}".format(self._players_A))
+        if self._players_A:
+            QtGui.QMessageBox.information(self, u"Players A",
+                                          u"Les joueurs A:\n{}".format(
+                                              [u"{} / {}".format(p.hostname, p)
+                                               for p in self._players_A]))
+        self.accept()
+
+    def get_players_A(self):
+        return self._players_A
 
 
 class WGains(QtGui.QWidget):
