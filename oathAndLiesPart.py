@@ -149,7 +149,7 @@ class PartieOL(Partie):
         for k in sorted(texts_OL.ADDITIONNAL_QUESTIONS.viewkeys()):
             tmp = yield (self.remote.callRemote(
                 "display_additionalquestion", k))
-            setattr(self.periods.get(1), "OL_question_{}".format(k), tmp)
+            setattr(self.currentperiod, "OL_question_{}".format(k), tmp)
         self.joueur.info(u"Ok")
         self.joueur.remove_waitmode()
 
@@ -171,9 +171,8 @@ class PartieOL(Partie):
 class RepetitionsOL(Base):
     __tablename__ = 'partie_oathAndLies_repetitions'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    partie_partie_id = Column(
-        Integer,
-        ForeignKey("partie_oathAndLies.partie_id"))
+    partie_partie_id = Column(Integer,
+                              ForeignKey("partie_oathAndLies.partie_id"))
 
     OL_period = Column(Integer)
     OL_treatment = Column(Integer)
