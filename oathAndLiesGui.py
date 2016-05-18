@@ -90,10 +90,17 @@ class DRoles(QtGui.QDialog):
                            self._drag.get_rightitems()]
         logger.info("A: {}".format(self._players_A))
         if self._players_A:
-            QtGui.QMessageBox.information(self, u"Players A",
-                                          u"Les joueurs A:\n{}".format(
-                                              [u"{} / {}".format(p.hostname, p)
-                                               for p in self._players_A]))
+            confirm = QtGui.QMessageBox.question(
+                self, texts_OL.trans_OL(u"Players A"),
+                texts_OL.trans_OL(u"There are {} players A:\n").format(
+                    len(self._players_A)) +
+                u"{}".format([u"{} / {}".format(p.hostname, p) for p
+                              in self._players_A]) + u"\n" +
+                texts_OL.trans_OL(u"Do you confirm?"),
+                QtGui.QMessageBox.No | QtGui.QMessageBox.Yes
+            )
+            if confirm != QtGui.QMessageBox.Yes:
+                return
         self.accept()
 
     def get_players_A(self):
@@ -192,9 +199,12 @@ class WChoiceMsg(QtGui.QWidget):
         if self._automatique:
             self._timer = QtCore.QTimer()
             self._timer.setSingleShot(True)
-            self._timer.timeout.connect(
-                lambda _: self.ui.comboBox.setCurrentIndex(
-                    random.randint(1, len(self._msg))))
+
+            def set_random():
+                self.ui.comboBox.setCurrentIndex(
+                    random.randint(1, len(self._msg)))
+
+            self._timer.timeout.connect(set_random)
             self._timer.start(self._autotime)
 
 
@@ -303,11 +313,8 @@ class WMsgA(QtGui.QWidget):
 
 
 class WChoiceB(QtGui.QWidget):
-    def __init__(self, parent, automatique, autotime=1000):
+    def __init__(self, parent):
         super(WChoiceB, self).__init__(parent)
-
-        self._automatique = automatique
-        self._autotime = autotime
 
         self.ui = OL_widChoiceB.Ui_Form()
         self.ui.setupUi(self)
@@ -320,14 +327,6 @@ class WChoiceB(QtGui.QWidget):
         self.ui.spinBox.setSingleStep(1)
         self.ui.spinBox.setButtonSymbols(QtGui.QSpinBox.NoButtons)
         self.ui.spinBox.setValue(0)
-
-    def _enabled(self):
-        if self._automatique:
-            self._timer = QtCore.QTimer()
-            self._timer.setSingleShot(True)
-            self._timer.timeout.connect(lambda _: self.ui.spinBox.setValue(
-                random.randint(1, 6)))
-            self._timer.start(self._autotime)
 
     def get_value(self):
         if self.ui.spinBox.value() == 0:
@@ -353,7 +352,7 @@ class DDecisionB(QtGui.QDialog):
                               val_de=val_de)
         layout.addWidget(self._widMsgA)
 
-        self._widChoiceB = WChoiceB(parent=self, automatique=self._automatique)
+        self._widChoiceB = WChoiceB(parent=self)
         self._widChoiceB.setEnabled(False)
         layout.addWidget(self._widChoiceB)
 
@@ -373,6 +372,16 @@ class DDecisionB(QtGui.QDialog):
         self.setWindowTitle(le2mtrans(u"Decision"))
         self.adjustSize()
         self.setFixedSize(self.size())
+
+    def _set_connections(self):
+        self._widMsgA.ui.pushButton.clicked.connect(
+            lambda: self._widChoiceB.setEnabled(True))
+        self._widChoiceB.ui.spinBox.valueChanged.connect(
+            lambda: self._buttons.setEnabled(True))
+        if self._automatique:
+            self._widMsgA.ui.pushButton.clicked.connect(
+                lambda: self._widChoiceB.ui.spinBox.setValue(
+                    random.randint(1, 6)))
 
     def reject(self):
         pass
@@ -400,12 +409,6 @@ class DDecisionB(QtGui.QDialog):
         logger.info(u"Send back {}".format(choice))
         self.accept()
         self._defered.callback(choice)
-
-    def _set_connections(self):
-        self._widMsgA.ui.pushButton.clicked.connect(
-            lambda _: self._widChoiceB.setEnabled(True))
-        self._widChoiceB.ui.spinBox.valueChanged.connect(
-            lambda _: self._buttons.setEnabled(True))
 
 
 class DQuestFinalOL(DQuestFinal):
