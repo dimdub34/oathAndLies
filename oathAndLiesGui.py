@@ -117,7 +117,13 @@ class WGains(QtGui.QWidget):
         self.ui.groupBox.setTitle(texts_OL.trans_OL(u"Payoffs"))
         options = [v.upper() for k, v in sorted(pms.OPTIONS.viewitems())]
         self.ui.label_x.setText(texts_OL.trans_OL(u"Option") + u" " + options[0])
+        self.ui.label_xvals.setText(u"{} pour vous et {} pour le joueur B".format(
+            pms.CODES_PERIODES[pms.GAME][0][0], pms.CODES_PERIODES[pms.GAME][0][1]
+        ))
         self.ui.label_y.setText(texts_OL.trans_OL(u"Option") + u" " + options[1])
+        self.ui.label_yvals.setText(u"{} pour vous et {} pour le joueur B".format(
+            pms.CODES_PERIODES[pms.GAME][1][0], pms.CODES_PERIODES[pms.GAME][1][1]
+        ))
         self.ui.pushButton_ok.setText(u"Ok")
         self.ui.pushButton_ok.clicked.connect(
             lambda _: self.ui.pushButton_ok.setEnabled(False))
